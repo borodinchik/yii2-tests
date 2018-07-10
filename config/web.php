@@ -43,14 +43,21 @@ $config = [
             ],
         ],
         'db' => $db,
-        /*
         'urlManager' => [
             'enablePrettyUrl' => true,
             'showScriptName' => false,
             'rules' => [
+//                    'task/index' => 'task/index',
+//                    'task/view' => 'task/view',
+                'GET,HEAD task/<id>' => 'task/view',
+                    'POST task' => 'task/create',
+//                    'task/delete/<id:\d+>' => 'task/delete',
+//                    'task/update/<id:\d+>' => 'task/update'
+
+
             ],
         ],
-        */
+        
     ],
     'params' => $params,
 ];
