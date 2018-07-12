@@ -8,23 +8,28 @@ use yii\data\ActiveDataProvider;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
 use yii\filters\VerbFilter;
+use yii\web\Response;
 use yii\web\UploadedFile;
+
 
 /**
  * TaskController implements the CRUD actions for Task model.
  */
 class TaskController extends Controller
 {
+    public $modelClass = 'app\models\Task';
+
     /**
      * {@inheritdoc}
      */
     public function behaviors()
     {
+        $this->enableCsrfValidation = false;
         return [
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
-                    'delete' => ['POST'],
+                    'delete' => ['DELETE'],
                 ],
             ],
         ];
@@ -37,12 +42,14 @@ class TaskController extends Controller
     public function actionIndex()
     {
         $dataProvider = new ActiveDataProvider([
-            'query' => Task::find(),
+            'query' => Task::find()->all(),
         ]);
 
-        return $this->render('index', [
-            'dataProvider' => $dataProvider,
-        ]);
+        $response = Yii::$app->response;
+        $response->format = \yii\web\Response::FORMAT_JSON;
+        $response->data = $dataProvider;
+        $response->statusCode = 200;
+        return $response;
     }
 
     /**
@@ -53,9 +60,12 @@ class TaskController extends Controller
      */
     public function actionView($id)
     {
-        return $this->render('view', [
-            'model' => $this->findModel($id),
-        ]);
+        $response = Yii::$app->response;
+        $response->format = \yii\web\Response::FORMAT_JSON;
+        $taskId = Task::findOne($id);
+        $response->data = $taskId;
+        $response->statusCode = 200;
+        return $response;
     }
 
     /**
@@ -68,32 +78,31 @@ class TaskController extends Controller
         $model = new Task();
 
         if (Yii::$app->request->post() != null) {
-
-
-            $move = (UploadedFile::getInstance($model, 'image'));
-            $file_name = NULL;
+            $move = (UploadedFile::getInstanceByName('image'));
+            $file_name = null;
             if ($move) {
                 $file_name = time() . '_' . rand(100000, 100000000) . '.' . $move->extension;
                 $move->saveAs('uploads/' . $file_name);
             }
-            $data = Yii::$app->request->post()['Task'];
+            $data = Yii::$app->request->post();
 
             $task = ['Task' => [
-                'title' => $data['title'],
+                'title' => isset($data['title']) ? $data['title'] : null,
                 'image' => $file_name,
-                'description' => $data['description']
+                'description' => isset($data['description']) ? $data['description'] : null,
+                'date_start' => isset($data['date_start']) ? $data['date_start'] : null,
             ]];
-
-
-            if ($model->load($task) && $model->save()) {
-                return $this->redirect(['view/' . $model->id, 'id' => $model->id]);
+            $response = Yii::$app->response;
+            $response->format = \yii\web\Response::FORMAT_JSON;
+            if ($model->load($task) && $model->validate()) {
+                $model->save();
+                $response->statusCode = 201;
+                return $response;
+            } else {
+                $response = $model->errors;
+                return $response;
             }
         }
-
-
-        return $this->render('create', [
-            'model' => $model,
-        ]);
     }
 
     /**
@@ -107,13 +116,34 @@ class TaskController extends Controller
     {
         $model = $this->findModel($id);
 
-        if ($model->load(Yii::$app->request->post()) && $model->save()) {
-            return $this->redirect(['view', 'id' => $model->id]);
+        $data = Yii::$app->request->post();
+        $move = (UploadedFile::getInstanceByName('image'));
+
+        if ($move) {
+            if ($model->image && file_exists('./uploads/' . $model->image)) {
+                unlink('./uploads/' . $model->image);
+            }
+            $file_name = time() . '_' . rand(100000, 100000000) . '.' . $move->extension;
+            $move->saveAs('uploads/' . $file_name);
         }
 
-        return $this->render('update', [
-            'model' => $model,
-        ]);
+        $task = ['Task' => [
+            'title' => isset($data['title']) ? $data['title'] : null,
+            'image' => isset($file_name) ? $file_name : $model->image,
+            'description' => isset($data['description']) ? $data['description'] : null,
+            'date_start' => isset($data['date_start']) ? $data['date_start'] : null,
+            'status' => isset($data['status']) ? $data['status'] : $model->status,
+        ]];
+        $response = Yii::$app->response;
+        $response->format = \yii\web\Response::FORMAT_JSON;
+        if ($model->load($task) && $model->validate()) {
+            $model->save();
+            $response->statusCode = 201;
+            return $response;
+        } else {
+            $response = $model->errors;
+            return $response;
+        }
     }
 
     /**
@@ -125,9 +155,16 @@ class TaskController extends Controller
      */
     public function actionDelete($id)
     {
-        $this->findModel($id)->delete();
+        $model = $this->findModel($id);
 
-        return $this->redirect(['index']);
+        if ($model->image && file_exists('./uploads/' . $model->image))
+        {
+            unlink('./uploads/' . $model->image);
+        }
+        $response = Yii::$app->response;
+        $this->findModel($id)->delete();
+        $response->statusCode = 204;
+        return $response;
     }
 
     /**
@@ -142,7 +179,6 @@ class TaskController extends Controller
         if (($model = Task::findOne($id)) !== null) {
             return $model;
         }
-
         throw new NotFoundHttpException('The requested page does not exist.');
     }
 }

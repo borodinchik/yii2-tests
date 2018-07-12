@@ -16,13 +16,13 @@ use yii\widgets\ActiveForm;
 
     <?= $form->field($model, 'description')->textarea(['rows' => 6]) ?>
 
-    <?= $form->field($model, 'date_creation')->textInput() ?>
+<!--    --><?php //$form->field($model, 'date_creation')->textInput() ?>
 
     <?= $form->field($model, 'date_start')->textInput() ?>
 
     <?= $form->field($model, 'image')->fileInput() ?>
 
-    <?= $form->field($model, 'status')->textInput() ?>
+<!--    --><?php //$form->field($model, 'status')->textInput() ?>
 
     <div class="form-group">
         <?= Html::submitButton('Save', ['class' => 'btn btn-success']) ?>
@@ -31,3 +31,13 @@ use yii\widgets\ActiveForm;
     <?php ActiveForm::end(); ?>
 
 </div>
+
+<script>
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        console.log(xhttp.responseText);
+    };
+    xhttp.open("POST", "/task/create", true);
+    xhttp.setRequestHeader("Content-Type", "application/json");
+    xhttp.send(JSON.stringify({test:'test'}));
+</script>
