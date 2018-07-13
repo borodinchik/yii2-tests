@@ -19,6 +19,12 @@ class TaskController extends Controller
 {
     public $modelClass = 'app\models\Task';
 
+    public static function allowedDomains() {
+        return [
+             '*',
+        ];
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -32,6 +38,16 @@ class TaskController extends Controller
                     'delete' => ['DELETE'],
                 ],
             ],
+            'corsFilter'  => [
+                'class' => \yii\filters\Cors::className(),
+                'cors'  => [
+                    // restrict access to domains:
+                    'Origin'                           => static::allowedDomains(),
+                    'Access-Control-Request-Method'    => ['POST'],
+                    'Access-Control-Allow-Credentials' => true,
+                    'Access-Control-Max-Age'           => 3600,                 // Cache (seconds)
+                ],
+            ],
         ];
     }
 
@@ -41,13 +57,9 @@ class TaskController extends Controller
      */
     public function actionIndex()
     {
-        $dataProvider = new ActiveDataProvider([
-            'query' => Task::find()->all(),
-        ]);
-
         $response = Yii::$app->response;
         $response->format = \yii\web\Response::FORMAT_JSON;
-        $response->data = $dataProvider;
+        $response->data = Task::find()->all();
         $response->statusCode = 200;
         return $response;
     }
