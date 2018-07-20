@@ -35,17 +35,19 @@ class TaskController extends Controller
             'verbs' => [
                 'class' => VerbFilter::className(),
                 'actions' => [
-                    'delete' => ['DELETE'],
+//                    'delete' => ['DELETE'],
                 ],
             ],
             'corsFilter'  => [
                 'class' => \yii\filters\Cors::className(),
                 'cors'  => [
                     // restrict access to domains:
-                    'Origin'                           => static::allowedDomains(),
-                    'Access-Control-Request-Method'    => ['POST'],
+                    'Origin' => static::allowedDomains(),
+                    'Access-Control-Request-Method' => ['*'],
                     'Access-Control-Allow-Credentials' => true,
-                    'Access-Control-Max-Age'           => 3600,                 // Cache (seconds)
+                    'Access-Control-Allow-Origin' => ['*'],
+                    'Access-Control-Request-Headers' => ['*'],
+                    'Access-Control-Max-Age' => 3600,                    // Cache (seconds)
                 ],
             ],
         ];
@@ -75,6 +77,8 @@ class TaskController extends Controller
         $response = Yii::$app->response;
         $response->format = \yii\web\Response::FORMAT_JSON;
         $taskId = Task::findOne($id);
+        $taskId->date_start = date('Y-m-d', strtotime($taskId->date_start
+        ));
         $response->data = $taskId;
         $response->statusCode = 200;
         return $response;
@@ -87,10 +91,13 @@ class TaskController extends Controller
      */
     public function actionCreate()
     {
+//        var_dump(Yii::$app->request->post());
+//        die();
         $model = new Task();
 
         if (Yii::$app->request->post() != null) {
             $move = (UploadedFile::getInstanceByName('image'));
+
             $file_name = null;
             if ($move) {
                 $file_name = time() . '_' . rand(100000, 100000000) . '.' . $move->extension;
@@ -147,7 +154,7 @@ class TaskController extends Controller
             'status' => isset($data['status']) ? $data['status'] : $model->status,
         ]];
         $response = Yii::$app->response;
-        $response->format = \yii\web\Response::FORMAT_JSON;
+        //$response->format = \yii\web\Response::FORMAT_JSON;
         if ($model->load($task) && $model->validate()) {
             $model->save();
             $response->statusCode = 201;
